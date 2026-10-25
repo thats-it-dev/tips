@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampPeople, parseAmount, parsePercent, perPersonCents, tipCents } from "../src/tips-math.ts";
+import { clampPeople, parseAmount, parsePercent, perPersonCents, perPersonRoundedUpCents, tipCents } from "../src/tips-math.ts";
 
 describe("parseAmount", () => {
 	it("parses plain decimals into cents", () => {
@@ -46,6 +46,16 @@ describe("perPersonCents", () => {
 		expect(perPersonCents(12000, 3)).toBe(4000);
 		expect(perPersonCents(1205, 3)).toBe(402); // 401.67 -> 402
 		expect(perPersonCents(1000, 1)).toBe(1000);
+	});
+});
+
+describe("perPersonRoundedUpCents", () => {
+	it("rounds the per-person share up to the next whole dollar", () => {
+		expect(perPersonRoundedUpCents(11500, 3)).toBe(3900); // 38.33 -> $39.00
+		expect(perPersonRoundedUpCents(12000, 3)).toBe(4000); // exact, no extra
+		expect(perPersonRoundedUpCents(1205, 3)).toBe(500); // $4.02 -> $5.00
+		expect(perPersonRoundedUpCents(1000, 1)).toBe(1000);
+		expect(perPersonRoundedUpCents(99, 3)).toBe(100); // tiny share -> $1.00
 	});
 });
 
