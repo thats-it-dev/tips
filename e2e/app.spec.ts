@@ -5,17 +5,16 @@ import { expect, test } from "./csp.ts";
 const KIT = "https://kit.thatsit.app/";
 const { title } = loadConfig();
 
-test("renders the kit shell", async ({ page }) => {
+test("renders the app with the kit loaded", async ({ page }) => {
 	await page.goto("/");
-	await expect(page.locator("tk-shell")).toBeVisible();
-	await expect(page.locator("tk-header")).toContainText(title);
-	await expect(page.locator("tk-sheet")).toBeAttached();
+	await expect(page.locator("app-main")).toBeVisible();
+	await expect(page.locator("h1")).toContainText(title);
 	await expect(page.locator("tk-toasts")).toBeAttached();
 });
 
 test("loads one Lit", async ({ page }) => {
 	await page.goto("/");
-	await expect(page.locator("tk-header")).toBeVisible();
+	await expect(page.locator("app-main")).toBeVisible();
 	expect(await page.evaluate(() => (globalThis as unknown as { litElementVersions: string[] }).litElementVersions.length)).toBe(1);
 });
 
@@ -42,25 +41,25 @@ for (const colorScheme of ["light", "dark"] as const) {
 		const ctx = await browser.newContext({ ...info.project.use, colorScheme });
 		const kit = await ctx.newPage();
 		await kit.goto(KIT);
-		await expect(kit.locator("tk-header")).toBeVisible();
+		await expect(kit.locator("app-main, tk-header").first()).toBeVisible();
 		const expected = { body: await bodyLook(kit), btn: await btnLook(kit) };
 		await ctx.close();
 		await page.emulateMedia({ colorScheme });
 		await page.goto("/");
-		await expect(page.locator("tk-header")).toBeVisible();
+		await expect(page.locator("app-main")).toBeVisible();
 		expect({ body: await bodyLook(page), btn: await btnLook(page) }).toEqual(expected);
 	});
 }
 
 test("works offline after first load", async ({ page, context }) => {
 	await page.goto("/");
-	await expect(page.locator("tk-header")).toBeVisible();
+	await expect(page.locator("app-main")).toBeVisible();
 	await page.evaluate(() => navigator.serviceWorker.ready);
 	await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
 	// The worker activates (and claims the page) only after install, which caches the precache list and the kit files.
 	await context.setOffline(true);
 	await page.reload();
-	await expect(page.locator("tk-header")).toBeVisible();
+	await expect(page.locator("app-main")).toBeVisible();
 	expect(await page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain("Inter");
 });
 
