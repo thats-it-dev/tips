@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing } from "https://kit.thatsit.app/lit.js";
 import { sharedStyles } from "https://kit.thatsit.app/kit.js";
-import { PRESET_TIPS, clampPeople, formatMoney, parseAmount, parsePercent, perPersonCents, tipCents } from "./tips-math.ts";
+import { PRESET_TIPS, clampPeople, formatMoney, parseAmount, parsePercent, perPersonCents, perPersonRoundedUpCents, tipCents } from "./tips-math.ts";
 
 export class AppMain extends LitElement {
 	static properties = {
@@ -8,6 +8,7 @@ export class AppMain extends LitElement {
 		tipChoice: { state: true },
 		customTip: { state: true },
 		people: { state: true },
+		roundUp: { state: true },
 	};
 	// Layout only here: no colors, fonts or border-radius.
 	static styles = [
@@ -19,6 +20,7 @@ export class AppMain extends LitElement {
 			.result { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 			.result output { font-variant-numeric: tabular-nums; }
 			.people-count { min-width: 2ch; text-align: center; }
+			.toggle { display: flex; align-items: center; gap: 8px; }
 		`,
 	];
 
@@ -26,6 +28,7 @@ export class AppMain extends LitElement {
 	tipChoice = "20";
 	customTip = "";
 	people = 1;
+	roundUp = false;
 
 	private setPeople(delta: number) {
 		this.people = clampPeople(this.people + delta);
@@ -35,9 +38,22 @@ export class AppMain extends LitElement {
 		const billCents = parseAmount(this.bill);
 		const percent = this.tipChoice === "custom" ? parsePercent(this.customTip) : Number(this.tipChoice);
 		const ready = billCents !== null && percent !== null;
-		const tip = ready ? tipCents(billCents!, percent!) : 0;
-		const total = ready ? billCents! + tip : 0;
-		const perPerson = ready ? perPersonCents(total, this.people) : 0;
+		let tip = 0;
+		let total = 0;
+		let perPerson = 0;
+		if (ready) {
+			const baseTip = tipCents(billCents!, percent!);
+			if (this.roundUp) {
+				// Round the per-person share up to a whole dollar; the tip absorbs the difference.
+				perPerson = perPersonRoundedUpCents(billCents! + baseTip, this.people);
+				total = perPerson * this.people;
+				tip = total - billCents!;
+			} else {
+				tip = baseTip;
+				total = billCents! + tip;
+				perPerson = perPersonCents(total, this.people);
+			}
+		}
 		const show = ready ? formatMoney : () => "—";
 
 		return html`
@@ -70,6 +86,11 @@ export class AppMain extends LitElement {
 					<span id="people" class="people-count">${this.people}</span>
 					<button id="people-plus" class="btn ghost" aria-label="More people" @click=${() => this.setPeople(1)}>+</button>
 				</div>
+				<label class="toggle">
+					<input id="round-up" type="checkbox" .checked=${this.roundUp}
+						@change=${(e: Event) => (this.roundUp = (e.target as HTMLInputElement).checked)} />
+					<span>Round up per person to a whole dollar</span>
+				</label>
 				<section class="results">
 					<p class="result"><span class="label">tip</span> <output id="tip">${show(tip)}</output></p>
 					<p class="result"><span class="label">total</span> <output id="total">${show(total)}</output></p>

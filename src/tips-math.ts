@@ -31,6 +31,14 @@ export function perPersonCents(total: number, people: number): number {
 	return Math.ceil(total / people);
 }
 
+/**
+ * One person's share of a total rounded up to the next whole dollar (in cents).
+ * Whole-dollar shares are kept as-is (no extra cent/dollar added).
+ */
+export function perPersonRoundedUpCents(total: number, people: number): number {
+	return Math.ceil(total / (people * 100)) * 100;
+}
+
 export function clampPeople(n: number): number {
 	if (!Number.isFinite(n) || n < 1) return 1;
 	return Math.min(MAX_PEOPLE, Math.round(n));
